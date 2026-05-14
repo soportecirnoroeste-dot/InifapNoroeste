@@ -3,18 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta charset="UTF-8">
-    <title>Biométrico - Sistema de Gestión (INIFAP)</title>
-    
-    <!-- Icono estándar para la pestaña -->
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    
-    <!-- Icono para cuando alguien guarda la web en el inicio de su iPhone -->
-    <link rel="apple-touch-icon" href="logo192.png">
-    
-    <!-- Icono para navegadores modernos (Android/Chrome) -->
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-
     <title>Biométrico - Sistema de Gestión (INIFAP)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
@@ -43,6 +31,7 @@
             .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
             .custom-scrollbar::-webkit-scrollbar-thumb { background: #249444; border-radius: 5px; }
             .btn-primary { @apply bg-brand-green hover:bg-brand-green-dark text-brand-white px-5 py-2.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-2; }
+            .btn-owa { @apply bg-[#0078D4] hover:bg-[#005a9e] text-white px-5 py-2.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-2; }
             
             :root {
                 --inifap-green: #239547;
@@ -85,7 +74,7 @@
             </div>
             
             <div class="flex-grow text-center hidden md:block">
-                <span class="text-2xl font-black text-brand-green tracking-widest uppercase italic">Biométrico</span>
+                <span class="text-2xl font-black text-brand-green tracking-widest uppercase italic text-center">Biométrico</span>
             </div>
 
             <div class="flex gap-2">
@@ -96,6 +85,9 @@
                 <button id="exportBtn" disabled class="bg-brand-dark/50 opacity-50 cursor-not-allowed text-brand-white px-5 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-2">
                     <span>📥</span> Exportar Todo
                 </button>
+                <button id="owaBtn" disabled class="bg-brand-dark/50 opacity-50 cursor-not-allowed text-brand-white px-5 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-2">
+                    <span>📧</span> Enviar por Correo
+                </button>
             </div>
         </div>
     </nav>
@@ -105,7 +97,7 @@
             <div class="relative w-full max-w-md">
                 <span class="absolute left-4 top-1/2 -translate-y-1/2 opacity-50">🔍</span>
                 <input type="text" id="searchInput" placeholder="Buscar empleado..." 
-                    class="w-full pl-12 pr-4 py-3 bg-[#F0F4F4] border border-[#DDE4E4] rounded-2xl outline-none focus:ring-2 focus:ring-brand-green">
+                    class="w-full pl-12 pr-4 py-3 bg-[#F0F4F4] border border-[#DDE4E4] rounded-2xl outline-none focus:ring-2 focus:ring-brand-green transition-all">
             </div>
             <div id="statsCounter" class="text-slate-600 font-medium pr-4"></div>
         </div>
@@ -130,6 +122,7 @@
 
         const uploadInput = document.getElementById('upload');
         const exportBtn = document.getElementById('exportBtn');
+        const owaBtn = document.getElementById('owaBtn');
         const searchInput = document.getElementById('searchInput');
 
         uploadInput.addEventListener('change', (e) => {
@@ -182,8 +175,11 @@
             document.getElementById('emptyState').classList.add('hidden');
             document.getElementById('appContainer').classList.remove('hidden');
             document.getElementById('toolbar').classList.remove('hidden');
+            
             exportBtn.disabled = false;
             exportBtn.className = "btn-primary";
+            owaBtn.disabled = false;
+            owaBtn.className = "btn-owa";
 
             tabContainer.innerHTML = "";
             const ids = Object.keys(groupedData).filter(id => 
@@ -224,9 +220,10 @@
 
         searchInput.addEventListener('input', (e) => renderTabs(e.target.value));
 
-        exportBtn.addEventListener('click', () => {
+        // --- FUNCIÓN DE GENERACIÓN DE EXCEL (TU FORMATO ORIGINAL) ---
+        function generateWorkbook() {
             const wb = XLSX.utils.book_new();
-            const fondoHoja = "E9F5E9"; // Verde pálido corporativo
+            const fondoHoja = "E9F5E9"; 
             const MaxFila = 200; 
             const MaxCol = 26; 
 
@@ -242,26 +239,16 @@
                     rawHeader,
                     ...emp.rows
                 ];
-
                 const ws = XLSX.utils.aoa_to_sheet(wsData);
-                
-                // Forzar el rango para pintar TODA la hoja
                 ws['!ref'] = `A1:${XLSX.utils.encode_col(MaxCol - 1)}${MaxFila}`;
                 ws['!view'] = { showGridLines: false };
-
-                // Merges
                 ws['!merges'] = [
-                    { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }, 
-                    { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } },                     
-                    { s: { r: 2, c: 0 }, e: { r: 2, c: 1 } }, 
-                    { s: { r: 0, c: 2 }, e: { r: 0, c: 5 } }, 
-                    { s: { r: 1, c: 2 }, e: { r: 1, c: 5 } }, 
-                    { s: { r: 2, c: 2 }, e: { r: 2, c: 5 } },  
-                    { s: { r: 3, c: 2 }, e: { r: 3, c: 5 } },  
-                    { s: { r: 4, c: 2 }, e: { r: 4, c: 5 } }  
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } },                     
+                    { s: { r: 2, c: 0 }, e: { r: 2, c: 1 } }, { s: { r: 0, c: 2 }, e: { r: 0, c: 5 } }, 
+                    { s: { r: 1, c: 2 }, e: { r: 1, c: 5 } }, { s: { r: 2, c: 2 }, e: { r: 2, c: 5 } },  
+                    { s: { r: 3, c: 2 }, e: { r: 3, c: 5 } }, { s: { r: 4, c: 2 }, e: { r: 4, c: 5 } }  
                 ];
 
-                // Anchos de columna
                 const tableRows = wsData.slice(6); 
                 const colWidths = rawHeader.map((_, colIndex) => {
                     if (colIndex === 0) return { wch: 15 };
@@ -275,57 +262,22 @@
                     return { wch: maxWidth };
                 });
                 ws['!cols'] = colWidths;
-                
-                // Aplicación de estilos masiva
+
                 for (let r = 0; r < MaxFila; r++) {
                     for (let c = 0; c < MaxCol; c++) {
                         const cellRef = XLSX.utils.encode_cell({ r: r, c: c });
                         if (!ws[cellRef]) ws[cellRef] = { v: "" };
-                        
-                        let style = {
-                            fill: { type: 'pattern', pattern: 'solid', fgColor: { rgb: fondoHoja } },
-                            font: { sz: 9, name: "Arial" },
-                            alignment: { vertical: "center", horizontal: "center" }
-                        };
-
-                        // Estilo Logo
-                        if (r === 0 && c === 0) { 
-                            style.font = { bold: true, sz: 24, color: { rgb: "249444" }, name: "Arial Black" }; 
-                            style.alignment.horizontal = "left"; 
-                        }
-                        // Estilo Leyendas
-                        if (r >= 1 && r <= 2 && c >= 0 && c <= 1){ 
-                            style.font = { sz: 8, color: { rgb: "1A1A1B" }, bold: true}; 
-                            style.alignment.horizontal = "left"; 
-                            style.alignment.wrapText = true; 
-                        }
-                        // Estilo Encabezado central
-                        if (r >= 0 && r <= 4 && c >= 2 && c <= 5) { 
-                            style.font = { sz: 9, bold: true }; 
-                        }           
-                        // Estilo Títulos Tabla
-                        if (r === 6 && c < rawHeader.length) {
-                            style.fill = { type: 'pattern', pattern: 'solid', fgColor: { rgb: "D9D9D9" } };
-                            style.font.bold = true;
-                            style.border = { top: {style:"thin"}, bottom: {style:"thin"}, left: {style:"thin"}, right: {style:"thin"} };
-                        }
-                        // Estilo Datos Tabla con FONDO VERDE por defecto
+                        let style = { fill: { type: 'pattern', pattern: 'solid', fgColor: { rgb: fondoHoja } }, font: { sz: 9, name: "Arial" }, alignment: { vertical: "center", horizontal: "center" } };
+                        if (r === 0 && c === 0) { style.font = { bold: true, sz: 24, color: { rgb: "249444" }, name: "Arial Black" }; style.alignment.horizontal = "left"; }
+                        if (r >= 1 && r <= 2 && c >= 0 && c <= 1){ style.font = { sz: 8, color: { rgb: "1A1A1B" }, bold: true}; style.alignment.horizontal = "left"; style.alignment.wrapText = true; }
+                        if (r >= 0 && r <= 4 && c >= 2 && c <= 5) { style.font = { sz: 9, bold: true }; }            
+                        if (r === 6 && c < rawHeader.length) { style.fill = { type: 'pattern', pattern: 'solid', fgColor: { rgb: "D9D9D9" } }; style.font.bold = true; style.border = { top: {style:"thin"}, bottom: {style:"thin"}, left: {style:"thin"}, right: {style:"thin"} }; }
                         if (r >= 7) {
                             const dRow = emp.rows[r - 7];
                             if (dRow && c < rawHeader.length) {
-                                // Fondo verde por defecto para la tabla
-                                let bgColor = fondoHoja; 
-                                let fontColor = "000000";
-
-                                // Colores de alerta por incidencia
-                                if (dRow[13]) { bgColor = "FF0000"; fontColor = "FFFFFF"; } 
-                                else if (dRow[12]) { bgColor = "E46C0A"; fontColor = "FFFFFF"; } 
-                                else if (dRow[11]) { bgColor = "FFC000"; } 
-                                else if (dRow[10]) { bgColor = "FFFF00"; }
-
-                                style.fill = { type: 'pattern', pattern: 'solid', fgColor: { rgb: bgColor } };
-                                style.font.color = { rgb: fontColor };
-                                style.border = { top: {style:"thin"}, bottom: {style:"thin"}, left: {style:"thin"}, right: {style:"thin"} };
+                                let bgColor = fondoHoja; let fontColor = "000000";
+                                if (dRow[13]) { bgColor = "FF0000"; fontColor = "FFFFFF"; } else if (dRow[12]) { bgColor = "E46C0A"; fontColor = "FFFFFF"; } else if (dRow[11]) { bgColor = "FFC000"; } else if (dRow[10]) { bgColor = "FFFF00"; }
+                                style.fill = { type: 'pattern', pattern: 'solid', fgColor: { rgb: bgColor } }; style.font.color = { rgb: fontColor }; style.border = { top: {style:"thin"}, bottom: {style:"thin"}, left: {style:"thin"}, right: {style:"thin"} };
                             }
                         }
                         ws[cellRef].s = style;
@@ -333,9 +285,33 @@
                 }
                 XLSX.utils.book_append_sheet(wb, ws, id.substring(0, 31));
             });
+            return wb;
+        }
+
+        exportBtn.addEventListener('click', () => {
+            const wb = generateWorkbook();
             XLSX.writeFile(wb, `Reporte_Biometrico_INIFAP.xlsx`);
         });
+
+        // --- LÓGICA DE ENVÍO SEGURO OWA ---
+        owaBtn.addEventListener('click', () => {
+            const wb = generateWorkbook();
+            XLSX.writeFile(wb, "Reporte_PARA_ENVIAR.xlsx");
+
+            const destinatario = "lopez.brenda@inifap.gob.mx";
+            const asunto = encodeURIComponent("Reporte Biométrico de Asistencia - INIFAP");
+           // En el cuerpo del correo usamos mayúsculas para simular importancia
+    const cuerpo = encodeURIComponent("Buen día,\n\nAdjunto envío el reporte de incidencias generado por el sistema.\n\nATENCIÓN: POR FAVOR, ADJUNTE EL ARCHIVO 'Reporte_PARA_ENVIAR.xlsx' QUE SE ACABA DE DESCARGAR.\n\nSaludos.");
+            
+            window.location.href = `mailto:${destinatario}?subject=${asunto}&body=${cuerpo}`;
+            
+           // Aquí es donde realmente le damos énfasis visual al usuario
+            alert("❗ PASO IMPORTANTE ❗\n\n" +
+                "1. El archivo Excel se ha descargado.\n" +
+                "2. Se abrirá su correo institucional.\n\n" +
+                "⚠️ POR FAVOR, NO OLVIDE ADJUNTAR EL ARCHIVO: \n" +
+                "'Reporte_PARA_ENVIAR.xlsx'");
+                });
     </script>
-    <script src="/_sdk/editing_sdk.js"></script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9fb39b7ef18d504c',t:'MTc3ODY5NTY5NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body></html>
 </body>
 </html>
